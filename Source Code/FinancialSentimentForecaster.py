@@ -189,23 +189,18 @@ class FinancialSentimentForecaster:
             Dictionary with forecast results
         """
         try:
-            # Prepare data for Prophet
             df_prophet = data.reset_index()[['Date', 'Close']].rename(
                 columns={'Date': 'ds', 'Close': 'y'}
             )
 
-            # Remove timezone information
             df_prophet['ds'] = df_prophet['ds'].dt.tz_localize(None)
 
-            # Create and fit model
             model = Prophet(daily_seasonality=True)
             model.fit(df_prophet)
 
-            # Make future dataframe and predict
             future = model.make_future_dataframe(periods=periods)
             forecast = model.predict(future)
 
-            # Extract forecast components
             components = model.plot_components(forecast)
 
             return {
@@ -217,7 +212,6 @@ class FinancialSentimentForecaster:
             }
         except Exception as e:
             print(f"Prophet forecasting failed: {e}")
-            # Return a minimal result so the rest of the analysis can continue
             return {
                 "forecast_df": pd.DataFrame(),
                 "predicted_prices": pd.DataFrame({'ds': [], 'yhat': [], 'yhat_lower': [], 'yhat_upper': []}),
@@ -236,7 +230,6 @@ class FinancialSentimentForecaster:
         Returns:
             Dictionary with forecast results
         """
-        # Prepare data
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(data['Close'].values.reshape(-1, 1))
 
@@ -250,7 +243,6 @@ class FinancialSentimentForecaster:
         x_train, y_train = np.array(x_train), np.array(y_train)
         x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
-        # Build LSTM model
         model = Sequential()
         model.add(LSTM(units=50, return_sequences=True,
                   input_shape=(x_train.shape[1], 1)))
@@ -261,14 +253,12 @@ class FinancialSentimentForecaster:
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x_train, y_train, epochs=25, batch_size=32, verbose=0)
 
-        # Prepare test data (last `prediction_days` values)
         test_data = scaled_data[-prediction_days:]
         x_test = []
         x_test.append(test_data)
         x_test = np.array(x_test)
         x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
-        # Predict future values
         predictions = []
         current_batch = x_test[0]
 
@@ -279,16 +269,13 @@ class FinancialSentimentForecaster:
             current_batch = np.append(
                 current_batch[1:], [[current_pred[0]]], axis=0)
 
-        # Inverse transform to get actual predicted prices
         predicted_prices = scaler.inverse_transform(
             np.array(predictions).reshape(-1, 1))
 
-        # Create dates for the future predictions
         last_date = data.index[-1]
         future_dates = [last_date +
                         timedelta(days=i+1) for i in range(future_days)]
 
-        # Create a DataFrame with the predictions
         forecast_df = pd.DataFrame({
             'Date': future_dates,
             'Predicted_Close': predicted_prices.flatten()
@@ -312,57 +299,44 @@ class FinancialSentimentForecaster:
         Returns:
             Dictionary with trend analysis
         """
-        # Calculate various technical indicators
-        # Simple Moving Averages
         data['SMA20'] = data['Close'].rolling(window=20).mean()
         data['SMA50'] = data['Close'].rolling(window=50).mean()
         data['SMA200'] = data['Close'].rolling(window=200).mean()
 
-        # Exponential Moving Averages
         data['EMA12'] = data['Close'].ewm(span=12, adjust=False).mean()
         data['EMA26'] = data['Close'].ewm(span=26, adjust=False).mean()
 
-        # MACD
         data['MACD'] = data['EMA12'] - data['EMA26']
         data['MACD_signal'] = data['MACD'].ewm(span=9, adjust=False).mean()
 
-        # Relative Strength Index
         delta = data['Close'].diff()
         gain = delta.where(delta > 0, 0).rolling(window=14).mean()
         loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
         rs = gain / loss
         data['RSI'] = 100 - (100 / (1 + rs))
 
-        # Bollinger Bands
         data['BB_middle'] = data['Close'].rolling(window=20).mean()
         data['BB_upper'] = data['BB_middle'] + 2 * \
             data['Close'].rolling(window=20).std()
         data['BB_lower'] = data['BB_middle'] - 2 * \
             data['Close'].rolling(window=20).std()
 
-        # Analyze the most recent data for trend identification
         recent_data = data.tail(50).copy()
 
-        # Short-term trend (using 20-day SMA direction)
         short_term_direction = "bullish" if recent_data[
             'SMA20'].iloc[-1] > recent_data['SMA20'].iloc[-10] else "bearish"
 
-        # Medium-term trend (using 50-day SMA direction)
         medium_term_direction = "bullish" if recent_data[
             'SMA50'].iloc[-1] > recent_data['SMA50'].iloc[-20] else "bearish"
 
-        # Long-term trend (using 200-day SMA direction)
         long_term_direction = "bullish" if recent_data[
             'SMA200'].iloc[-1] > recent_data['SMA200'].iloc[-50] else "bearish"
 
-        # Determine MACD trend
         macd_trend = "bullish" if recent_data['MACD'].iloc[-1] > recent_data['MACD_signal'].iloc[-1] else "bearish"
 
-        # Determine RSI conditions
         latest_rsi = recent_data['RSI'].iloc[-1]
         rsi_condition = "overbought" if latest_rsi > 70 else "oversold" if latest_rsi < 30 else "neutral"
 
-        # Golden Cross / Death Cross detection
         has_golden_cross = False
         has_death_cross = False
 
@@ -376,9 +350,7 @@ class FinancialSentimentForecaster:
                 has_death_cross = True
                 break
 
-        # Calculate volatility
         data['Returns'] = data['Close'].pct_change()
-        # Annualized volatility
         volatility = data['Returns'].std() * (252 ** 0.5)
 
         return {
@@ -409,10 +381,8 @@ class FinancialSentimentForecaster:
         Returns:
             Dictionary with investment recommendation details
         """
-        # Get stock information
         stock_info = self.get_stock_info(ticker)
 
-        # Prepare a summary of all analyses for the LLM
         analysis_summary = f"""
         Ticker: {ticker}
         
@@ -456,7 +426,6 @@ class FinancialSentimentForecaster:
         52-Week Low: ${stock_info.get('fiftyTwoWeekLow', 0):.2f}
         """
 
-        # Ask the LLM for an investment recommendation
         prompt = f"""
         Based on the following comprehensive analysis of {ticker}, provide an investment recommendation.
         
@@ -475,31 +444,26 @@ class FinancialSentimentForecaster:
         Your analysis should combine technical, fundamental, and sentiment factors.
         """
 
-        # Convert generator to string by consuming it fully
         recommendation_text = ""
         for chunk in self.assistant.run(prompt):
             recommendation_text += chunk
 
-        # Extract key recommendation info
         lines = recommendation_text.split('\n')
         summary_line = ""
         for line in lines:
             if "RECOMMENDATION SUMMARY" in line:
-                # Start capturing from the next line
                 summary_index = lines.index(line) + 1
                 if summary_index < len(lines):
                     summary_line = lines[summary_index].strip()
                     break
 
-        # Determine recommendation type from the text
-        rec_type = "HOLD"  # Default
+        rec_type = "HOLD"  
         if "BUY" in recommendation_text.upper() or "BULLISH" in recommendation_text.upper():
             rec_type = "BUY"
         elif "SELL" in recommendation_text.upper() or "BEARISH" in recommendation_text.upper():
             rec_type = "SELL"
 
-        # Determine confidence level
-        confidence = "MEDIUM"  # Default
+        confidence = "MEDIUM"  
         if "HIGH CONFIDENCE" in recommendation_text.upper() or "STRONG" in recommendation_text.upper():
             confidence = "HIGH"
         elif "LOW CONFIDENCE" in recommendation_text.upper() or "CAUTIOUS" in recommendation_text.upper():
@@ -553,7 +517,6 @@ class FinancialSentimentForecaster:
             ticker, sentiment_analysis, trend_analysis, prophet_forecast, lstm_forecast
         )
 
-        # Combine all analysis into a single result
         result = {
             "ticker": ticker,
             "analysis_date": datetime.now().strftime("%Y-%m-%d"),
