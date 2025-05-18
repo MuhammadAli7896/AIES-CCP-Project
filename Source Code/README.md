@@ -1,2 +1,1 @@
-# AIES CCP Project
 
