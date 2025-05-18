@@ -57,6 +57,12 @@ You can install all dependencies using the provided `requirements.txt` file.
 
 The application uses the GROQ API for enhanced language model capabilities. You can provide your own API key through environment variables:
 
+For Windows:
+```bash
+set GROQ_API_KEY=your_api_key_here
+```
+For Mac and Linux:
+
 ```bash
 export GROQ_API_KEY="your_api_key_here"
 ```
@@ -69,6 +75,7 @@ If no API key is provided, the application will use a default key (note that thi
 # Clone the repository
 git clone https://github.com/MuhammadAli7896/AIES-CCP-Project.git
 cd AIES-CCP-Project
+cd "Source Code"
 
 # Create and activate a virtual environment (recommended)
 python -m venv venv
