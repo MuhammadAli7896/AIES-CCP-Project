@@ -24,14 +24,12 @@ nltk.download('punkt', quiet=True)
 
 
 class FinancialSentimentForecaster:
-    def __init__(self, groq_api_key: str = None, google_api_key: str = None, google_cse_id: str = None):
+    def __init__(self, groq_api_key: str = None):
         """
         Initialize the Financial Sentiment and Forecasting system
         
         Args:
             groq_api_key: API key for Groq LLM service
-            google_api_key: API key for Google Custom Search
-            google_cse_id: Custom Search Engine ID for Google Search
         """
         
         self.groq_api_key = groq_api_key or os.getenv("GROQ_API_KEY")

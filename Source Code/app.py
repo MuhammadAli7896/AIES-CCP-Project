@@ -12,7 +12,8 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 
 def initialize_analyzer():
-    api_key = os.getenv("GROQ_API_KEY") or "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"
+    api_key = os.getenv(
+        "GROQ_API_KEY") or "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"
     return FinancialSentimentForecaster(groq_api_key=api_key)
 
 
@@ -53,14 +54,19 @@ def analyze_stock(ticker, period):
         lstm_forecast = result["lstm_forecast"]
         recommendation = result["recommendation"]
 
-        axs[0].plot(data.index, data['Close'], label='Close Price', color='blue')
-        axs[0].plot(data.index, data['SMA20'], label='20-Day SMA', color='red', alpha=0.7)
-        axs[0].plot(data.index, data['SMA50'], label='50-Day SMA', color='green', alpha=0.7)
-        axs[0].plot(data.index, data['SMA200'], label='200-Day SMA', color='purple', alpha=0.7)
+        axs[0].plot(data.index, data['Close'],
+                    label='Close Price', color='blue')
+        axs[0].plot(data.index, data['SMA20'],
+                    label='20-Day SMA', color='red', alpha=0.7)
+        axs[0].plot(data.index, data['SMA50'],
+                    label='50-Day SMA', color='green', alpha=0.7)
+        axs[0].plot(data.index, data['SMA200'],
+                    label='200-Day SMA', color='purple', alpha=0.7)
 
         last_date = data.index[-1]
         if 'predicted_prices' in prophet_forecast and not prophet_forecast['predicted_prices'].empty:
-            forecast_dates = pd.date_range(start=last_date + timedelta(days=1), periods=len(prophet_forecast['predicted_prices']))
+            forecast_dates = pd.date_range(
+                start=last_date + timedelta(days=1), periods=len(prophet_forecast['predicted_prices']))
             axs[0].plot(forecast_dates, prophet_forecast['predicted_prices']['yhat'].values,
                         label='Prophet Forecast', color='orange', linestyle='--')
 
@@ -68,7 +74,8 @@ def analyze_stock(ticker, period):
             axs[0].plot(lstm_forecast['forecast_df'].index, lstm_forecast['forecast_df']['Predicted_Close'],
                         label='LSTM Forecast', color='brown', linestyle='--')
 
-        axs[0].set_title(f'{ticker} Price History and Forecasts ({period})', fontsize=16)
+        axs[0].set_title(
+            f'{ticker} Price History and Forecasts ({period})', fontsize=16)
         axs[0].set_ylabel('Price (USD)', fontsize=12)
         axs[0].legend()
         axs[0].grid(True, alpha=0.3)
@@ -84,9 +91,11 @@ def analyze_stock(ticker, period):
         axs[1].grid(True, alpha=0.3)
 
         axs[2].plot(data.index, data['MACD'], label='MACD', color='blue')
-        axs[2].plot(data.index, data['MACD_signal'], label='Signal Line', color='red')
+        axs[2].plot(data.index, data['MACD_signal'],
+                    label='Signal Line', color='red')
         axs[2].bar(data.index, data['MACD'] - data['MACD_signal'],
-                   color=np.where(data['MACD'] >= data['MACD_signal'], 'green', 'red'),
+                   color=np.where(
+                       data['MACD'] >= data['MACD_signal'], 'green', 'red'),
                    alpha=0.5, label='Histogram')
         axs[2].set_title('MACD', fontsize=16)
         axs[2].legend()
@@ -116,6 +125,20 @@ def analyze_stock(ticker, period):
         plt.tight_layout()
 
         rec_text = recommendation.get("recommendation_text", "No recommendation available")
+        
+        import re
+        if rec_text:
+            rec_text = re.sub(
+                r"(?i)^RECOMMENDATION SUMMARY[:：]?",
+                r"### RECOMMENDATION SUMMARY",
+                rec_text.strip(),
+                flags=re.MULTILINE
+            )
+
+            rec_text = re.sub(r"\*\*(.+?):\s*", r"\n\n### \1\n", rec_text)
+
+            rec_text = re.sub(r"\*\*(.+?)\*\*", r"\n\n### \1", rec_text)
+
         rec_summary = recommendation.get("summary", "No summary available")
 
         sentiment = result["sentiment_analysis"]
@@ -147,13 +170,16 @@ def analyze_stock(ticker, period):
 def create_stock_analysis_interface():
     with gr.Blocks(title="Financial Sentiment & Forecast Analyzer") as demo:
         gr.Markdown("# 📈 Financial Sentiment & Forecast Analyzer")
-        error_output = gr.Textbox(label="Error Messages", visible=False, interactive=False)
+        error_output = gr.Textbox(
+            label="Error Messages", visible=False, interactive=False)
 
         with gr.Row():
-            ticker_input = gr.Textbox(label="Enter Stock Ticker", placeholder="e.g., AAPL, GOOGL, MSFT")
+            ticker_input = gr.Textbox(
+                label="Enter Stock Ticker", placeholder="e.g., AAPL, GOOGL, MSFT")
             period_dropdown = gr.Dropdown(
                 label="Analysis Period",
-                choices=["3 months", "6 months", "1 year", "2 years", "5 years", "10 years"],
+                choices=["3 months", "6 months", "1 year",
+                    "2 years", "5 years", "10 years"],
                 value="2 years"
             )
             analyze_btn = gr.Button("Analyze Stock", variant="primary")
@@ -162,10 +188,12 @@ def create_stock_analysis_interface():
             with gr.TabItem("Visualization"):
                 plot_output = gr.Plot(label="Stock Analysis Visualization")
             with gr.TabItem("Recommendation"):
-                rec_text_output = gr.Textbox(label="Detailed Recommendation", lines=10)
+                rec_text_output = gr.Markdown(label="Detailed Recommendation")
                 rec_summary_output = gr.Textbox(label="Recommendation Summary")
+
             with gr.TabItem("Sentiment Analysis"):
-                sentiment_output = gr.Textbox(label="Sentiment Details", lines=5)
+                sentiment_output = gr.Textbox(
+                    label="Sentiment Details", lines=5)
             with gr.TabItem("Trend Analysis"):
                 trend_output = gr.Textbox(label="Trend Details", lines=5)
 
