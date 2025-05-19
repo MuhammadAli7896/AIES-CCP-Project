@@ -24,26 +24,13 @@ nltk.download('punkt', quiet=True)
 
 
 class FinancialSentimentForecaster:
-    def __init__(self, groq_api_key: str = None):
-        """
-        Initialize the Financial Sentiment and Forecasting system
-        
-        Args:
-            groq_api_key: API key for Groq LLM service
-        """
-        
+    def __init__(self, groq_api_key=None):
         self.groq_api_key = groq_api_key or os.getenv("GROQ_API_KEY")
         if not self.groq_api_key:
-            raise ValueError(
-                "GROQ_API_KEY must be provided or set as an environment variable")
+            raise ValueError("GROQ_API_KEY must be provided or set as an environment variable")
 
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
-
-        self.llm = Groq(
-            model="llama3-70b-8192",
-            api_key=self.groq_api_key,
-            temperature=0.2,
-        )
+        self.llm = Groq(model="llama3-70b-8192", api_key=self.groq_api_key, temperature=0.2)
 
         self.search_tool = GoogleSearch()
         self.yfinance_tools = YFinanceTools()
@@ -51,10 +38,7 @@ class FinancialSentimentForecaster:
         self.assistant = Assistant(
             name="Financial Analyst",
             llm=self.llm,
-            tools=[
-                self.search_tool,
-                self.yfinance_tools
-            ],
+            tools=[self.search_tool, self.yfinance_tools],
             system_prompt="""
             You are a professional financial analyst assistant. 
             Use the provided tools to gather financial data and news.
@@ -65,18 +49,7 @@ class FinancialSentimentForecaster:
             """
         )
 
-    def search_news(self, asset: str, num_results: int = 20) -> List[Dict]:
-        """
-        Search for recent news about a specific asset using Google Search
-        
-        Args:
-            asset: The asset to search news for (e.g., "AAPL", "Bitcoin")
-            num_results: Number of search results to return
-            
-        Returns:
-            List of dictionaries containing news information
-        """
-        
+    def search_news(self, asset, num_results=20):
         queries = [
             f"{asset} stock news recent",
             f"{asset} financial news analysis",
@@ -87,23 +60,11 @@ class FinancialSentimentForecaster:
 
         results = []
         for query in queries:
-            search_results = self.search_tool.google_search(
-                query, max_results=num_results//len(queries))
+            search_results = self.search_tool.google_search(query, max_results=num_results//len(queries))
             results.extend(search_results)
-
         return results
 
-    def analyze_news_sentiment(self, news_results: List[Dict]) -> Dict[str, Any]:
-        """
-        Analyze sentiment from news search results
-        
-        Args:
-            news_results: List of news search results
-            
-        Returns:
-            Dictionary with sentiment analysis results
-        """
-        
+    def analyze_news_sentiment(self, news_results):
         texts = []
         for result in news_results:
             if 'snippet' in result:
@@ -112,10 +73,7 @@ class FinancialSentimentForecaster:
                 texts.append(result['title'])
 
         combined_text = " ".join(texts)
-
-        vader_sentiment = self.sentiment_analyzer.polarity_scores(
-            combined_text)
-
+        vader_sentiment = self.sentiment_analyzer.polarity_scores(combined_text)
         textblob_sentiment = TextBlob(combined_text).sentiment
 
         prompt = f"""
@@ -146,51 +104,20 @@ class FinancialSentimentForecaster:
             "negative" if vader_sentiment['compound'] < -0.05 else "neutral"
         }
 
-    def get_stock_data(self, ticker: str, period: str = "2y") -> pd.DataFrame:
-        """
-        Get historical stock data for a given ticker
-        
-        Args:
-            ticker: Stock ticker symbol
-            period: Time period for historical data (e.g., "1y", "2y", "5y")
-            
-        Returns:
-            DataFrame with historical stock data
-        """
+    def get_stock_data(self, ticker, period="2y"):
         stock = yf.Ticker(ticker)
         stock_history = stock.history(period=period)
         return stock_history
 
-    def get_stock_info(self, ticker: str) -> Dict:
-        """
-        Get stock information for a given ticker
-        
-        Args:
-            ticker: Stock ticker symbol
-            
-        Returns:
-            Dictionary with stock information
-        """
-        
+    def get_stock_info(self, ticker):
         stock = yf.Ticker(ticker)
         return stock.info
 
-    def forecast_with_prophet(self, data: pd.DataFrame, periods: int = 30) -> Dict[str, Any]:
-        """
-        Forecast stock prices using Facebook Prophet
-        
-        Args:
-            data: DataFrame with historical stock data
-            periods: Number of days to forecast
-            
-        Returns:
-            Dictionary with forecast results
-        """
+    def forecast_with_prophet(self, data, periods=30):
         try:
             df_prophet = data.reset_index()[['Date', 'Close']].rename(
                 columns={'Date': 'ds', 'Close': 'y'}
             )
-
             df_prophet['ds'] = df_prophet['ds'].dt.tz_localize(None)
 
             model = Prophet(daily_seasonality=True)
@@ -198,7 +125,6 @@ class FinancialSentimentForecaster:
 
             future = model.make_future_dataframe(periods=periods)
             forecast = model.predict(future)
-
             components = model.plot_components(forecast)
 
             return {
@@ -216,18 +142,7 @@ class FinancialSentimentForecaster:
                 "error": str(e)
             }
 
-    def forecast_with_lstm(self, data: pd.DataFrame, prediction_days: int = 60, future_days: int = 30) -> Dict[str, Any]:
-        """
-        Forecast stock prices using LSTM neural network
-        
-        Args:
-            data: DataFrame with historical stock data
-            prediction_days: Number of previous days to use for prediction
-            future_days: Number of days to forecast into the future
-            
-        Returns:
-            Dictionary with forecast results
-        """
+    def forecast_with_lstm(self, data, prediction_days=60, future_days=30):
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(data['Close'].values.reshape(-1, 1))
 
@@ -242,8 +157,7 @@ class FinancialSentimentForecaster:
         x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
         model = Sequential()
-        model.add(LSTM(units=50, return_sequences=True,
-                  input_shape=(x_train.shape[1], 1)))
+        model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
         model.add(LSTM(units=50, return_sequences=False))
         model.add(Dense(units=25))
         model.add(Dense(units=1))
@@ -261,19 +175,13 @@ class FinancialSentimentForecaster:
         current_batch = x_test[0]
 
         for _ in range(future_days):
-            current_pred = model.predict(
-                current_batch.reshape(1, prediction_days, 1))[0]
+            current_pred = model.predict(current_batch.reshape(1, prediction_days, 1))[0]
             predictions.append(current_pred[0])
-            current_batch = np.append(
-                current_batch[1:], [[current_pred[0]]], axis=0)
+            current_batch = np.append(current_batch[1:], [[current_pred[0]]], axis=0)
 
-        predicted_prices = scaler.inverse_transform(
-            np.array(predictions).reshape(-1, 1))
-
+        predicted_prices = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
         last_date = data.index[-1]
-        future_dates = [last_date +
-                        timedelta(days=i+1) for i in range(future_days)]
-
+        future_dates = [last_date + timedelta(days=i+1) for i in range(future_days)]
         forecast_df = pd.DataFrame({
             'Date': future_dates,
             'Predicted_Close': predicted_prices.flatten()
@@ -287,23 +195,12 @@ class FinancialSentimentForecaster:
             "scaler": scaler
         }
 
-    def identify_trends(self, data: pd.DataFrame) -> Dict[str, Any]:
-        """
-        Identify market trends from historical data
-        
-        Args:
-            data: DataFrame with historical stock data
-            
-        Returns:
-            Dictionary with trend analysis
-        """
+    def identify_trends(self, data):
         data['SMA20'] = data['Close'].rolling(window=20).mean()
         data['SMA50'] = data['Close'].rolling(window=50).mean()
         data['SMA200'] = data['Close'].rolling(window=200).mean()
-
         data['EMA12'] = data['Close'].ewm(span=12, adjust=False).mean()
         data['EMA26'] = data['Close'].ewm(span=26, adjust=False).mean()
-
         data['MACD'] = data['EMA12'] - data['EMA26']
         data['MACD_signal'] = data['MACD'].ewm(span=9, adjust=False).mean()
 
@@ -314,22 +211,14 @@ class FinancialSentimentForecaster:
         data['RSI'] = 100 - (100 / (1 + rs))
 
         data['BB_middle'] = data['Close'].rolling(window=20).mean()
-        data['BB_upper'] = data['BB_middle'] + 2 * \
-            data['Close'].rolling(window=20).std()
-        data['BB_lower'] = data['BB_middle'] - 2 * \
-            data['Close'].rolling(window=20).std()
+        data['BB_upper'] = data['BB_middle'] + 2 * data['Close'].rolling(window=20).std()
+        data['BB_lower'] = data['BB_middle'] - 2 * data['Close'].rolling(window=20).std()
 
         recent_data = data.tail(50).copy()
 
-        short_term_direction = "bullish" if recent_data[
-            'SMA20'].iloc[-1] > recent_data['SMA20'].iloc[-10] else "bearish"
-
-        medium_term_direction = "bullish" if recent_data[
-            'SMA50'].iloc[-1] > recent_data['SMA50'].iloc[-20] else "bearish"
-
-        long_term_direction = "bullish" if recent_data[
-            'SMA200'].iloc[-1] > recent_data['SMA200'].iloc[-50] else "bearish"
-
+        short_term_direction = "bullish" if recent_data['SMA20'].iloc[-1] > recent_data['SMA20'].iloc[-10] else "bearish"
+        medium_term_direction = "bullish" if recent_data['SMA50'].iloc[-1] > recent_data['SMA50'].iloc[-20] else "bearish"
+        long_term_direction = "bullish" if recent_data['SMA200'].iloc[-1] > recent_data['SMA200'].iloc[-50] else "bearish"
         macd_trend = "bullish" if recent_data['MACD'].iloc[-1] > recent_data['MACD_signal'].iloc[-1] else "bearish"
 
         latest_rsi = recent_data['RSI'].iloc[-1]
@@ -364,21 +253,7 @@ class FinancialSentimentForecaster:
             "technical_data": data
         }
 
-    def get_investment_recommendation(self, ticker: str, sentiment_analysis: Dict, trend_analysis: Dict,
-                                      prophet_forecast: Dict, lstm_forecast: Dict) -> Dict[str, Any]:
-        """
-        Generate investment recommendations based on analysis
-        
-        Args:
-            ticker: Stock ticker symbol
-            sentiment_analysis: Results from sentiment analysis
-            trend_analysis: Results from trend analysis
-            prophet_forecast: Results from Prophet forecast
-            lstm_forecast: Results from LSTM forecast
-            
-        Returns:
-            Dictionary with investment recommendation details
-        """
+    def get_investment_recommendation(self, ticker, sentiment_analysis, trend_analysis, prophet_forecast, lstm_forecast):
         stock_info = self.get_stock_info(ticker)
 
         analysis_summary = f"""
@@ -430,16 +305,13 @@ class FinancialSentimentForecaster:
         {analysis_summary}
         
         In your recommendation:
-        1. Start with a clear "RECOMMENDATION SUMMARY" section that provides a concise 1-2 sentence summary of your overall recommendation (BUY/SELL/HOLD with confidence level and timeframe)
+        1. Start with a clear "RECOMMENDATION SUMMARY" section that provides a concise 1-2 sentence summary
         2. Determine if this is a good buy for short-term trading (days to weeks)
         3. Determine if this is a good buy for long-term holding (months to years)
         4. List the primary factors supporting your recommendation
         5. List potential risks that could change your outlook
         6. Suggest an appropriate position sizing based on the risk profile
         7. Include any relevant price targets or stop-loss recommendations
-        
-        Format your response with clear section headers and bullet points where appropriate.
-        Your analysis should combine technical, fundamental, and sentiment factors.
         """
 
         recommendation_text = ""
@@ -474,48 +346,30 @@ class FinancialSentimentForecaster:
             "confidence": confidence
         }
     
-    def analyze_asset(self, ticker: str, period: str = "2y") -> Dict[str, Any]:
-        """
-        Run a complete analysis of an asset
-        
-        Args:
-            ticker: Stock ticker symbol
-            period: Time period for historical data
-            
-        Returns:
-            Dictionary with complete analysis results
-        """
+    def analyze_asset(self, ticker, period="2y"):
         print(f"Analyzing {ticker}...")
-        print("Gathering news and analyzing sentiment...")
         news_results = self.search_news(ticker)
         sentiment_analysis = self.analyze_news_sentiment(news_results)
-
-        print("Getting historical data...")
         stock_data = self.get_stock_data(ticker, period)
-
-        print("Identifying trends...")
         trend_analysis = self.identify_trends(stock_data)
-
-        print("Generating forecasts with Prophet...")
+        
         try:
             prophet_forecast = self.forecast_with_prophet(stock_data)
         except Exception as e:
             print(f"Prophet forecasting failed: {e}")
             prophet_forecast = {"error": str(e)}
 
-        print("Generating forecasts with LSTM...")
         try:
             lstm_forecast = self.forecast_with_lstm(stock_data)
         except Exception as e:
             print(f"LSTM forecasting failed: {e}")
             lstm_forecast = {"error": str(e)}
 
-        print("Formulating investment recommendation...")
         recommendation = self.get_investment_recommendation(
             ticker, sentiment_analysis, trend_analysis, prophet_forecast, lstm_forecast
         )
 
-        result = {
+        return {
             "ticker": ticker,
             "analysis_date": datetime.now().strftime("%Y-%m-%d"),
             "sentiment_analysis": sentiment_analysis,
@@ -525,5 +379,3 @@ class FinancialSentimentForecaster:
             "recommendation": recommendation,
             "historical_data": stock_data
         }
-
-        return result
