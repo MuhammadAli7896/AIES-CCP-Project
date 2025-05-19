@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from FinancialSentimentForecaster import FinancialSentimentForecaster
 
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-
 
 def initialize_analyzer():
     api_key = os.getenv(
@@ -169,13 +167,13 @@ def analyze_stock(ticker, period):
 
 def create_stock_analysis_interface():
     with gr.Blocks(title="Financial Sentiment & Forecast Analyzer") as demo:
-        gr.Markdown("# 📈 Financial Sentiment & Forecast Analyzer")
+        gr.Markdown("# Financial Sentiment & Forecast Analyzer")
         error_output = gr.Textbox(
             label="Error Messages", visible=False, interactive=False)
 
         with gr.Row():
             ticker_input = gr.Textbox(
-                label="Enter Stock Ticker", placeholder="e.g., AAPL, GOOGL, MSFT")
+                label="Enter Stock Ticker", placeholder="e.g., AAPL, TSLA, MSFT")
             period_dropdown = gr.Dropdown(
                 label="Analysis Period",
                 choices=["3 months", "6 months", "1 year",
@@ -189,7 +187,7 @@ def create_stock_analysis_interface():
                 plot_output = gr.Plot(label="Stock Analysis Visualization")
             with gr.TabItem("Recommendation"):
                 rec_text_output = gr.Markdown(label="Detailed Recommendation")
-                rec_summary_output = gr.Textbox(label="Recommendation Summary")
+                rec_summary_output = gr.Textbox(label="Recommendation Summary", max_lines=3, lines=2)
 
             with gr.TabItem("Sentiment Analysis"):
                 sentiment_output = gr.Textbox(
@@ -221,7 +219,7 @@ def create_stock_analysis_interface():
 if __name__ == "__main__":
     try:
         demo = create_stock_analysis_interface()
-        demo.launch(server_port=7860, inbrowser=True)
+        demo.launch(server_port=7860, inbrowser=True, share=True)
     except Exception as e:
         print(f"Critical error during application launch: {e}")
         traceback.print_exc()
