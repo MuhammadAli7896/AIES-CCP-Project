@@ -2,7 +2,7 @@
 
 A comprehensive stock market analysis tool that combines technical indicators, machine learning forecasts, and sentiment analysis to provide investment recommendations and price predictions.
 
-## 📊 Project Overview
+##  Project Overview
 
 The Financial Sentiment & Forecast Analyzer is a sophisticated web application built with Gradio that helps investors make informed decisions by analyzing stock market data through multiple lenses:
 
@@ -11,7 +11,10 @@ The Financial Sentiment & Forecast Analyzer is a sophisticated web application b
 3. **Sentiment Analysis**: Gauges market sentiment using natural language processing techniques.  
 4. **Investment Recommendations**: Provides actionable insights based on combined analysis results.  
 
-## 🌟 Features
+## Youtube Overview
+  https://youtu.be/w5qDHLH_9Ck
+
+##  Features
 
 - **Interactive User Interface**: Easy-to-use Gradio interface with tabbed results display.  
 - **Comprehensive Stock Analysis**: View technical indicators, forecasts, and sentiment in one dashboard.  
@@ -26,7 +29,7 @@ The Financial Sentiment & Forecast Analyzer is a sophisticated web application b
   - LSTM neural network for deep learning-based predictions.  
 - **NLP-Powered Sentiment Analysis**: Combines VADER and TextBlob for robust sentiment scoring.  
 
-## 🛠️ Technologies Used
+##  Technologies Used
 
 - **Frontend**: Gradio (web interface framework).  
 - **Data Analysis**: Pandas, NumPy.  
@@ -35,7 +38,7 @@ The Financial Sentiment & Forecast Analyzer is a sophisticated web application b
 - **Natural Language Processing**: VADER, TextBlob.  
 - **API Integration**: GROQ API for enhanced language model capabilities.  
 
-## 📋 Requirements
+##  Requirements
 
 This project requires the following Python packages:  
 
@@ -53,7 +56,7 @@ This project requires the following Python packages:
 
 You can install all dependencies using the provided `requirements.txt` file.
 
-## 🔧 Configuration
+##  Configuration
 
 The application uses the GROQ API for enhanced language model capabilities. You can provide your own API key through environment variables:
 
@@ -69,7 +72,7 @@ export GROQ_API_KEY="your_api_key_here"
 
 If no API key is provided, the application will use a default key (note that this key may be rate-limited).
 
-## 🚀 Installation
+##  Installation
 
 ```bash
 # Clone the repository
@@ -85,7 +88,7 @@ source venv/bin/activate  # On Windows, use: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 💻 Usage
+##  Usage
 
 To run the application:
 
@@ -106,7 +109,7 @@ The web interface will automatically open in your default browser at http://loca
    - **Sentiment Analysis**: Market sentiment metrics.  
    - **Trend Analysis**: Short, medium, and long-term trend indicators.  
 
-## 📊 How It Works
+##  How It Works
 
 ### Data Collection and Processing  
 The application fetches historical stock data and processes it to calculate technical indicators like moving averages, RSI, and MACD.  
